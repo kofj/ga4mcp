@@ -64,6 +64,7 @@ func main() {
 	auth := flag.String("auth", envOr("GA4MCP_AUTH", "adc"), "credential mode: adc or oauth")
 	clientID := flag.String("oauth-client-id", os.Getenv("GA4MCP_CLIENT_ID"), "OAuth client ID (with -auth oauth)")
 	clientSecret := flag.String("oauth-client-secret", os.Getenv("GA4MCP_CLIENT_SECRET"), "OAuth client secret (with -auth oauth)")
+	redirectURL := flag.String("oauth-redirect-url", envOr("GA4MCP_REDIRECT_URL", ""), "OAuth callback URL (with -auth oauth); defaults to http://<loopback listen addr>/callback")
 	tokenFile := flag.String("token-file", envOr("GA4MCP_TOKEN_FILE", defaultTokenFile()), "where the OAuth token is cached")
 	authToken := flag.String("auth-token", os.Getenv("MCP_AUTH_TOKEN"), "bearer token clients must send to /mcp; empty leaves the endpoint open")
 	healthcheck := flag.Bool("healthcheck", false, "probe the local /healthz endpoint and exit")
@@ -84,6 +85,7 @@ func main() {
 		ClientSecret: *clientSecret,
 		TokenFile:    *tokenFile,
 		Listen:       *addr,
+		RedirectURL:  *redirectURL,
 	}
 
 	ctx := context.Background()

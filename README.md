@@ -24,6 +24,9 @@ go run . -auth oauth \
 ```
 
 First run prints an authorization URL and waits on `http://127.0.0.1:<port>/callback`.
+Set `-oauth-redirect-url` (or `GA4MCP_REDIRECT_URL`) when the callback the browser
+can reach differs from the loopback listen address, and make sure the same URL is
+registered on the OAuth client.
 Later runs reuse the cached token; a rejected refresh token falls back to login.
 Add `-allow-write` to request `analytics.edit` and expose `create_property_annotation`.
 

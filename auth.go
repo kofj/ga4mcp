@@ -31,6 +31,7 @@ type authConfig struct {
 	ClientSecret string
 	TokenFile    string
 	Listen       string
+	RedirectURL  string
 }
 
 func authenticate(ctx context.Context, scopes []string, cfg authConfig) (oauth2.TokenSource, error) {
@@ -61,7 +62,7 @@ func oauthTokenSource(ctx context.Context, scopes []string, cfg authConfig) (oau
 		ClientID:     cfg.ClientID,
 		ClientSecret: cfg.ClientSecret,
 		Endpoint:     google.Endpoint,
-		RedirectURL:  "http://" + loopbackHost(cfg.Listen) + "/callback",
+		RedirectURL:  resolveRedirectURL(cfg.RedirectURL, cfg.Listen),
 		Scopes:       scopes,
 	}
 
@@ -238,9 +239,17 @@ func hasScope(scopes []string, want string) bool {
 	return slices.Contains(scopes, want)
 }
 
-// loopbackHost turns a listen address into something usable in a redirect URI.
-// Google requires a loopback IP for desktop OAuth clients, so an all-interfaces
-// listen address maps to 127.0.0.1.
+// resolveRedirectURL builds the OAuth callback URL. An explicit redirect URL
+// wins; otherwise the listen address is used, and Google's desktop clients
+// require a loopback IP there, so an all-interfaces listen address maps to
+// 127.0.0.1.
+func resolveRedirectURL(redirect, listen string) string {
+	if redirect != "" {
+		return redirect
+	}
+	return "http://" + loopbackHost(listen) + "/callback"
+}
+
 func loopbackHost(listen string) string {
 	host, port, err := net.SplitHostPort(listen)
 	if err != nil {
