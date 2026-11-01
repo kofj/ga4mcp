@@ -41,6 +41,35 @@ one Google identity, so this only keeps the endpoint from being reached by
 anyone who can route to it. Leave it unset only when the listener is loopback-only.
 `/healthz` is never guarded.
 
+## Smoke test with curl
+
+The endpoint speaks streamable HTTP, so a bare POST is rejected before auth is
+even considered: the handler needs both `Content-Type: application/json` and an
+`Accept` covering JSON and SSE. Omitting `Accept` returns
+`400 upstream answered with content type "text/plain; charset=utf-8"`.
+
+```bash
+MCP_URL=http://localhost:8080/mcp
+MCP_AUTH="Authorization: Bearer $MCP_AUTH_TOKEN"
+MCP_HEADERS=(-H "$MCP_AUTH" -H "Content-Type: application/json" \
+             -H "Accept: application/json, text/event-stream")
+
+curl -s "${MCP_HEADERS[@]}" "$MCP_URL" -d '{"jsonrpc":"2.0","id":1,"method":"initialize",\
+"params":{"protocolVersion":"2025-06-18","capabilities":{},\
+"clientInfo":{"name":"curl","version":"0"}}}'
+
+curl -s "${MCP_HEADERS[@]}" "$MCP_URL" -d \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":\
+{"name":"run_report","arguments":{"property_id":"123456789",\
+"date_ranges":[{"start_date":"7daysAgo","end_date":"today"}],\
+"dimensions":[{"name":"country"}],"metrics":[{"name":"activeUsers"}]}}}'
+```
+
+Responses come back as `event: message` followed by a `data:` line; pipe
+through `sed 's/^data: //'` and `jq` to read the JSON. Add `-H "Mcp-Session-Id:
+<id from the initialize response>"` when the server runs in stateful mode;
+`-stateless` makes that unnecessary.
+
 ## Wire it into Claude Code
 
 ```bash
