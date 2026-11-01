@@ -50,25 +50,35 @@ claude mcp add --transport http ga4 http://localhost:8080/mcp \
 
 ## Docker
 
+Credentials come from `~/.config/ga4mcp/.env`; copy `.env.example` there and
+fill in the client id, client secret and `MCP_AUTH_TOKEN`. Then:
+
 ```bash
-export MCP_AUTH_TOKEN=...            # required
-export GA4MCP_CLIENT_ID=...          # required
-export GA4MCP_CLIENT_SECRET=...      # required
-docker compose up -d --build
+task build   # docker build, tagged with the git describe version
+task start   # build, then docker compose up -d
+task logs
+task stop
 ```
 
+The image is built as `ga4mcp:<git describe output>` plus `ga4mcp:latest`.
 The container runs as `GA4MCP_UID:GA4MCP_GID` (default `1000:1000`) and mounts
 the host's `~/.config/ga4mcp` at `/data`, so `token.json` survives restarts and
-refreshes are written back to the host. The directory must already contain a
-token — the interactive flow needs a loopback browser that a container cannot
-provide, so sign in on the host first:
+refreshes are written back to the host.
+
+That directory must already contain a token — the interactive flow needs a
+loopback browser that a container cannot provide, so sign in on the host first.
+Running the binary locally reads the same `.env` the container does:
 
 ```bash
-go run . -auth oauth -token-file ~/.config/ga4mcp/token.json ...
+set -a; . ~/.config/ga4mcp/.env; set +a
+go run . -auth oauth -oauth-client-id "$GA4MCP_CLIENT_ID" \
+  -oauth-client-secret "$GA4MCP_CLIENT_SECRET" \
+  -token-file ~/.config/ga4mcp/token.json -auth-token "$MCP_AUTH_TOKEN"
 ```
 
 If the host directory is owned by a different uid, set `GA4MCP_UID`/`GA4MCP_GID`
-to `id -u`/`id -g`.
+to `id -u`/`id -g`. `CONFIG_DIR` overrides where `.env` and `token.json` are
+read from.
 
 ## Tools
 

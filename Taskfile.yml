@@ -1,0 +1,41 @@
+version: "3"
+
+vars:
+  CONFIG_DIR: '{{.CONFIG_DIR | default (printf "%s/.config/ga4mcp" (env "HOME"))}}'
+  IMAGE: '{{.IMAGE | default "ga4mcp"}}'
+  VERSION:
+    sh: git describe --tags --always --dirty
+
+env:
+  GA4MCP_CONFIG_DIR: "{{.CONFIG_DIR}}"
+  GA4MCP_IMAGE: "{{.IMAGE}}:{{.VERSION}}"
+
+tasks:
+  default:
+    desc: List tasks
+    cmds:
+      - task --list
+
+  build:
+    desc: Build the image tagged with the git describe version
+    cmds:
+      - docker build --label version={{.VERSION}} -t "{{.IMAGE}}:{{.VERSION}}" -t "{{.IMAGE}}:latest" .
+
+  start:
+    desc: Build and run against the host token cache and .env credentials
+    preconditions:
+      - sh: test -f "{{.CONFIG_DIR}}/.env"
+        msg: "missing {{.CONFIG_DIR}}/.env, copy .env.example there"
+    cmds:
+      - task: build
+      - docker compose up -d --no-build
+
+  stop:
+    desc: Stop the container
+    cmds:
+      - docker compose down
+
+  logs:
+    desc: Follow the container logs
+    cmds:
+      - docker compose logs -f ga4mcp
