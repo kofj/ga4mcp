@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -12,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -232,12 +235,7 @@ func randomHex(n int) string {
 }
 
 func hasScope(scopes []string, want string) bool {
-	for _, s := range scopes {
-		if s == want {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(scopes, want)
 }
 
 // loopbackHost turns a listen address into something usable in a redirect URI.
@@ -252,4 +250,31 @@ func loopbackHost(listen string) string {
 		host = "127.0.0.1"
 	}
 	return net.JoinHostPort(host, port)
+}
+
+// bearerAuth guards the MCP endpoint with a shared secret. An empty token
+// disables the check, which is only safe when the listener is loopback-only.
+func bearerAuth(token string, next http.Handler) http.Handler {
+	if token == "" {
+		slog.Warn("MCP_AUTH_TOKEN is unset, the MCP endpoint is unauthenticated")
+		return next
+	}
+	want := sha256.Sum256([]byte(token))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got := sha256.Sum256([]byte(bearerFrom(r)))
+		if subtle.ConstantTimeCompare(got[:], want[:]) != 1 {
+			w.Header().Set("WWW-Authenticate", `Bearer realm="ga4mcp"`)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func bearerFrom(r *http.Request) string {
+	scheme, token, ok := strings.Cut(strings.TrimSpace(r.Header.Get("Authorization")), " ")
+	if !ok || !strings.EqualFold(scheme, "Bearer") {
+		return ""
+	}
+	return token
 }

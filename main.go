@@ -65,6 +65,7 @@ func main() {
 	clientID := flag.String("oauth-client-id", os.Getenv("GA4MCP_CLIENT_ID"), "OAuth client ID (with -auth oauth)")
 	clientSecret := flag.String("oauth-client-secret", os.Getenv("GA4MCP_CLIENT_SECRET"), "OAuth client secret (with -auth oauth)")
 	tokenFile := flag.String("token-file", envOr("GA4MCP_TOKEN_FILE", defaultTokenFile()), "where the OAuth token is cached")
+	authToken := flag.String("auth-token", os.Getenv("MCP_AUTH_TOKEN"), "bearer token clients must send to /mcp; empty leaves the endpoint open")
 	healthcheck := flag.Bool("healthcheck", false, "probe the local /healthz endpoint and exit")
 	flag.Parse()
 
@@ -98,13 +99,13 @@ func main() {
 	)
 
 	mux := http.NewServeMux()
-	mux.Handle("/mcp", handler)
-	mux.Handle("/mcp/", handler)
+	mux.Handle("/mcp", bearerAuth(*authToken, handler))
+	mux.Handle("/mcp/", bearerAuth(*authToken, handler))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	slog.Info("listening", "addr", *addr, "auth", cfg.Mode, "stateless", *stateless)
+	slog.Info("listening", "addr", *addr, "auth", cfg.Mode, "stateless", *stateless, "bearer_auth", *authToken != "")
 	server := &http.Server{
 		Addr:              *addr,
 		Handler:           mux,

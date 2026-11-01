@@ -30,10 +30,19 @@ Add `-allow-write` to request `analytics.edit` and expose `create_property_annot
 `PORT` overrides `-addr` for Cloud Run. `-stateless` (or `MCP_STATELESS=1`) drops
 MCP sessions so any instance can serve any request.
 
+## Endpoint auth
+
+`-auth-token` (or `MCP_AUTH_TOKEN`) requires `Authorization: Bearer <token>` on
+`/mcp`. It is independent of the Google credential mode: the server still holds
+one Google identity, so this only keeps the endpoint from being reached by
+anyone who can route to it. Leave it unset only when the listener is loopback-only.
+`/healthz` is never guarded.
+
 ## Wire it into Claude Code
 
 ```bash
-claude mcp add --transport http ga4 http://localhost:8080/mcp
+claude mcp add --transport http ga4 http://localhost:8080/mcp \
+  --header "Authorization: Bearer $MCP_AUTH_TOKEN"
 ```
 
 ## Tools
