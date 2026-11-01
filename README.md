@@ -91,6 +91,10 @@ refreshes are written back to the host.
 
 That directory must already contain a token — the interactive flow needs a
 loopback browser that a container cannot provide, so sign in on the host first.
+It must also be owned by the uid the container runs as: `token.json` is written
+`0600`, so a root-owned file is unreadable and the server blocks on the login
+URL instead of failing.
+
 Running the binary locally reads the same `.env` the container does:
 
 ```bash
