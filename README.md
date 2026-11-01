@@ -80,6 +80,10 @@ If the host directory is owned by a different uid, set `GA4MCP_UID`/`GA4MCP_GID`
 to `id -u`/`id -g`. `CONFIG_DIR` overrides where `.env` and `token.json` are
 read from.
 
+Compose reads that `.env` twice: through `env_file` for the container, and
+through `--env-file` so `${GA4MCP_PORT}` and friends interpolate. Calling
+`docker compose` by hand without `--env-file` leaves the port at 8080.
+
 ## Tools
 
 | Tool | API |

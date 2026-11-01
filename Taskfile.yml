@@ -28,14 +28,14 @@ tasks:
         msg: "missing {{.CONFIG_DIR}}/.env, copy .env.example there"
     cmds:
       - task: build
-      - docker compose up -d --no-build
+      - docker compose --env-file "{{.CONFIG_DIR}}/.env" up -d --no-build
 
   stop:
     desc: Stop the container
     cmds:
-      - docker compose down
+      - docker compose --env-file "{{.CONFIG_DIR}}/.env" down
 
   logs:
     desc: Follow the container logs
     cmds:
-      - docker compose logs -f ga4mcp
+      - docker compose --env-file "{{.CONFIG_DIR}}/.env" logs -f ga4mcp

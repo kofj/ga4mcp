@@ -1,7 +1,7 @@
 services:
   ga4mcp:
     build: .
-    image: "${GA4MCP_IMAGE:-ga4mcp:local}"
+    image: "${GA4MCP_IMAGE:-ga4mcp:latest}"
     restart: unless-stopped
     user: "${GA4MCP_UID:-1000}:${GA4MCP_GID:-1000}"
     ports:
