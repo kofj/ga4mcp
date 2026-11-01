@@ -97,12 +97,14 @@ func main() {
 
 	handler := mcp.NewStreamableHTTPHandler(
 		func(*http.Request) *mcp.Server { return srv },
-		&mcp.StreamableHTTPOptions{Stateless: *stateless},
+		&mcp.StreamableHTTPOptions{Stateless: *stateless, JSONResponse: true},
 	)
 
+	mcpHandler := acceptBothMediaTypes(handler)
+
 	mux := http.NewServeMux()
-	mux.Handle("/mcp", bearerAuth(*authToken, handler))
-	mux.Handle("/mcp/", bearerAuth(*authToken, handler))
+	mux.Handle("/mcp", bearerAuth(*authToken, mcpHandler))
+	mux.Handle("/mcp/", bearerAuth(*authToken, mcpHandler))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
@@ -117,6 +119,17 @@ func main() {
 		slog.Error("serve", "err", err)
 		os.Exit(1)
 	}
+}
+
+// acceptBothMediaTypes rewrites Accept so the streamable transport accepts the
+// request. The transport demands both application/json and text/event-stream,
+// while responses are JSON here, so a client that sends neither or only one of
+// them means the same thing.
+func acceptBothMediaTypes(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Header.Set("Accept", "application/json, text/event-stream")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func probeHealthz(hostport string) int {

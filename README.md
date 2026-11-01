@@ -43,16 +43,13 @@ anyone who can route to it. Leave it unset only when the listener is loopback-on
 
 ## Smoke test with curl
 
-The endpoint speaks streamable HTTP, so a bare POST is rejected before auth is
-even considered: the handler needs both `Content-Type: application/json` and an
-`Accept` covering JSON and SSE. Omitting `Accept` returns
-`400 upstream answered with content type "text/plain; charset=utf-8"`.
+Responses are plain JSON, and the server rewrites `Accept` for the transport, so
+a request needs only `Content-Type: application/json`:
 
 ```bash
 MCP_URL=http://localhost:8080/mcp
-MCP_AUTH="Authorization: Bearer $MCP_AUTH_TOKEN"
-MCP_HEADERS=(-H "$MCP_AUTH" -H "Content-Type: application/json" \
-             -H "Accept: application/json, text/event-stream")
+MCP_HEADERS=(-H "Authorization: Bearer $MCP_AUTH_TOKEN" \
+             -H "Content-Type: application/json")
 
 curl -s "${MCP_HEADERS[@]}" "$MCP_URL" -d '{"jsonrpc":"2.0","id":1,"method":"initialize",\
 "params":{"protocolVersion":"2025-06-18","capabilities":{},\
@@ -65,10 +62,8 @@ curl -s "${MCP_HEADERS[@]}" "$MCP_URL" -d \
 "dimensions":[{"name":"country"}],"metrics":[{"name":"activeUsers"}]}}}'
 ```
 
-Responses come back as `event: message` followed by a `data:` line; pipe
-through `sed 's/^data: //'` and `jq` to read the JSON. Add `-H "Mcp-Session-Id:
-<id from the initialize response>"` when the server runs in stateful mode;
-`-stateless` makes that unnecessary.
+Add `-H "Mcp-Session-Id: <id from the initialize response>"` when the server
+runs in stateful mode; `-stateless` makes that unnecessary.
 
 ## Wire it into Claude Code
 
