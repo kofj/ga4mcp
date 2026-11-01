@@ -1,0 +1,23 @@
+services:
+  ga4mcp:
+    build: .
+    image: ga4mcp:latest
+    restart: unless-stopped
+    user: "${GA4MCP_UID:-1000}:${GA4MCP_GID:-1000}"
+    ports:
+      - "${GA4MCP_PORT:-8080}:8080"
+    environment:
+      MCP_AUTH_TOKEN: "${MCP_AUTH_TOKEN:?set MCP_AUTH_TOKEN before starting}"
+      GA4MCP_AUTH: oauth
+      GA4MCP_CLIENT_ID: "${GA4MCP_CLIENT_ID:?set GA4MCP_CLIENT_ID}"
+      GA4MCP_CLIENT_SECRET: "${GA4MCP_CLIENT_SECRET:?set GA4MCP_CLIENT_SECRET}"
+      GA4MCP_REDIRECT_URL: "${GA4MCP_REDIRECT_URL:-}"
+      GA4MCP_TOKEN_FILE: /data/token.json
+    volumes:
+      - "${HOME}/.config/ga4mcp:/data"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/ga4mcp", "-healthcheck", "-addr", "127.0.0.1:8080"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

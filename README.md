@@ -48,6 +48,28 @@ claude mcp add --transport http ga4 http://localhost:8080/mcp \
   --header "Authorization: Bearer $MCP_AUTH_TOKEN"
 ```
 
+## Docker
+
+```bash
+export MCP_AUTH_TOKEN=...            # required
+export GA4MCP_CLIENT_ID=...          # required
+export GA4MCP_CLIENT_SECRET=...      # required
+docker compose up -d --build
+```
+
+The container runs as `GA4MCP_UID:GA4MCP_GID` (default `1000:1000`) and mounts
+the host's `~/.config/ga4mcp` at `/data`, so `token.json` survives restarts and
+refreshes are written back to the host. The directory must already contain a
+token — the interactive flow needs a loopback browser that a container cannot
+provide, so sign in on the host first:
+
+```bash
+go run . -auth oauth -token-file ~/.config/ga4mcp/token.json ...
+```
+
+If the host directory is owned by a different uid, set `GA4MCP_UID`/`GA4MCP_GID`
+to `id -u`/`id -g`.
+
 ## Tools
 
 | Tool | API |
